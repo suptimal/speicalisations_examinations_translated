@@ -40,6 +40,8 @@
         <script>
             let examination_trans = {!! json_encode($examination_trans) !!}    
             let specialisation_examination = {!! json_encode($specialisation_examination)!!}
+            let examination_note = {!! $examination_note !!}
+            let specialisation_note = {!! $specialisation_note !!}
 
             document.querySelector("#specialisation").onchange = (e) => {
                 let ops = specialisation_examination[e.target.value]
@@ -64,6 +66,26 @@
                         option.value = o
                         document.querySelector("#examination").appendChild(option)
                     });
+                }
+
+                // check if we should display a note for specialisation
+                if (specialisation_note[e.target.value]) {
+                    if (specialisation_note[e.target.value]["popup"]) {
+                        alert(specialisation_note[e.target.value]['note'])
+                    } else {
+                        console.log(specialisation_note[e.target.value]['note'])
+                    }
+                }
+            }
+
+            document.querySelector("#examination").onchange = (e) => {
+                // check if we should display a note for specialisation
+                if (examination_note[e.target.value]) {
+                    if (examination_note[e.target.value]["popup"]) {
+                        alert(examination_note[e.target.value]['note'])
+                    } else {
+                        console.log(examination_note[e.target.value]['note'])
+                    }
                 }
             }
         </script>

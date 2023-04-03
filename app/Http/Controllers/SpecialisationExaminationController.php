@@ -30,12 +30,31 @@ class SpecialisationExaminationController extends Controller
         ->mapWithKeys(function ($i) {return [$i->api_id => $i->examinations->pluck('api_id')];})
         ->toArray();
 
+        $specialisation_note = $specialisations->filter(function ($i) {return $i->has_note;})
+        ->mapWithKeys(function ($i) use ($label, $service)  {
+            return [$i->api_id => [
+                'note' => trans("$label.$service.specialisation_note.$i->api_id"),
+                "popup" => $i->has_note_popup,
+                ]
+            ];
+        });
+        $examination_note = Examination::where("has_note", true)->get()
+        ->mapWithKeys(function ($i) use ($label, $service)  {
+            return [$i->api_id => [
+                'note' => trans("$label.$service.examination_note.$i->api_id"),
+                "popup" => $i->has_note_popup,
+                ]
+            ];
+        });
+
         return view('specialisation-examination.upload-form', [
             'label' => $label,
             'service' => $service,
             'specialisations' => $specialisations,
             'examination_trans' => $examination_trans,
             'specialisation_examination' => $specialisation_examination,
+            'specialisation_note' => $specialisation_note,
+            'examination_note' => $examination_note,
         ]);
     }
 
