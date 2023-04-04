@@ -144,19 +144,22 @@ class SpecialisationExaminationController extends Controller
             'specialisation' => [],
             'examination' => [],
         ];
+        $notes = [
+            'specialisation' => [],
+            'examination' => [],
+        ];
         $relations = [];
-        $notes = [];
         foreach (['de', 'en'] as $lang) {
             if (! in_array($lang, $data->getSheetNames())){ continue; }
             foreach (array_slice($data->getSheetByName($lang)->toArray(), 1) as $row) {
                 $specialisation_api_id = $row[0];
                 $specialisation_note = $row[2];
-                $specialisation_note_popup = strtolower($row[3]);
+                $specialisation_note_popup = isset($row[3]) ? strtolower($row[3]) : '';
                 $specialisation = $row[1];
                 $examination_api_id = $row[4];
                 $examination = $row[5];
                 $examination_note = $row[6];
-                $examination_note_popup = strtolower($row[7]);
+                $examination_note_popup = isset($row[7]) ? strtolower($row[7]) : '';
 
                 // skip rows without specialisations => invalid data
                 if (!$specialisation_api_id) { continue; }
@@ -206,6 +209,8 @@ class SpecialisationExaminationController extends Controller
             $e->insurence_label = $label;
             $e->api_id = $examination_api_id;
             $e->service = $service;
+            $e->has_note = false;
+            $e->has_note_popup = false;
 
             if (array_key_exists($examination_api_id, $notes['examination'])){
                 // mark note usage
@@ -249,6 +254,8 @@ class SpecialisationExaminationController extends Controller
             $s->insurence_label = $label;
             $s->api_id = $specialisation_api_id;
             $s->service = $service;
+            $s->has_note = false;
+            $s->has_note_popup = false;
 
             if (array_key_exists($specialisation_api_id, $notes['specialisation'])){
                 // mark note usage
