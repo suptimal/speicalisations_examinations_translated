@@ -63,7 +63,6 @@ class SpecialisationExaminationController extends Controller
         $specialisations = Specialisation::with('examinations')->where([
             'insurence_label' => $label,
             'service' => $service,
-            // 'api_id' => 34,
         ])->get();
 
         $workbook = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -167,7 +166,7 @@ class SpecialisationExaminationController extends Controller
                 $groups['specialisation'][$specialisation_api_id][$lang] = $specialisation;
 
                 if ($specialisation_note){
-                    $notes["specialisation"][$specialisation_api_id][$lang] = $specialisation_note;
+                    $notes["specialisation"][$specialisation_api_id]['trans'][$lang] = $specialisation_note;
                     $notes["specialisation"][$specialisation_api_id]['popup'] = in_array($specialisation_note_popup, ["yes","ja"]);
                 }
                 
@@ -177,7 +176,7 @@ class SpecialisationExaminationController extends Controller
                 $groups['examination'][$examination_api_id][$lang] = $examination;
 
                 if ($examination_note){
-                    $notes["examination"][$examination_api_id][$lang] = $examination_note;
+                    $notes["examination"][$examination_api_id]['trans'][$lang] = $examination_note;
                     $notes["examination"][$examination_api_id]['popup'] = in_array($examination_note_popup, ["yes","ja"]);
                 }
 
@@ -221,10 +220,7 @@ class SpecialisationExaminationController extends Controller
                 $tn = $translations['examination']->firstWhere("key", "$service.examination_note.$examination_api_id") ?: new LanguageLine();
                 $tn->group = $label;
                 $tn->key = "$service.examination_note.$examination_api_id";
-                $tn->text = collect(["de", "en"])
-                    ->mapWithKeys(function ($e) use ($notes, $examination_api_id) {
-                        return [$e =>  $notes["examination"][$examination_api_id][$e]];
-                    });
+                $tn->text = $notes["examination"][$examination_api_id]["trans"];
                 $tn->save();
             }
             $e->save();
@@ -266,10 +262,8 @@ class SpecialisationExaminationController extends Controller
                 $tn = $translations['specialisation']->firstWhere("key", "$service.specialisation_note.$specialisation_api_id") ?: new LanguageLine();
                 $tn->group = $label;
                 $tn->key = "$service.specialisation_note.$specialisation_api_id";
-                $tn->text = collect(["de", "en"])
-                    ->mapWithKeys(function ($e) use ($notes, $specialisation_api_id) {
-                        return [$e =>  $notes["specialisation"][$specialisation_api_id][$e]];
-                    });
+                $tn->text = $notes["specialisation"][$specialisation_api_id]['trans'];
+
                 $tn->save();
             }
 
@@ -293,10 +287,25 @@ class SpecialisationExaminationController extends Controller
             "insurence_label" => $label, 
             "service" => $service,
         ])->whereNotIn('api_id', array_keys($groups['examination']))->delete();
+        
         Specialisation::where([
             "insurence_label" => $label, 
             "service" => $service,
         ])->whereNotIn('api_id', array_keys($groups['specialisation']))->delete();
+        
+        // delete unused translations for specialisation and examination within group $label
+        LanguageLine::where(["group" => $label])
+            ->where(function($query) use ($service) {
+                $query->where("key", "like", "{$service}.specialisation.%")
+                ->orWhere("key", "like", "{$service}.examination.%");
+            })
+            ->whereNotIn('key', array_map(
+                function ($e) use ($service) {return "{$service}.specialisation.{$e}";},
+                array_keys($groups['specialisation'])))
+            ->whereNotIn('key', array_map(
+                function ($e) use ($service) {return "{$service}.examination.{$e}";},
+                array_keys($groups['examination'])))
+            ->delete();
 
         return redirect()->back()->with('success', 'Fachrichtungen importiert');
     }
